@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Parecer Técnico HUV</title>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+
+  <!-- Estilos -->
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- Bibliotecas externas (CDN) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+<div class="app">
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="tb-ico">
+    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M9 12h6m-3-3v6"/><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z"/></svg>
+  </div>
+  <div class="tb-name">Parecer Técnico HUV</div>
+  <div class="tb-sep"></div>
+  <div class="tb-sub">Hospital Universitário de Vassouras</div>
+  <div class="tb-right">
+    <button onclick="importJSON()" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:5px 12px;font-size:12px;color:#fff;cursor:pointer;font-family:var(--font);font-weight:600;display:flex;align-items:center;gap:5px" title="Importar base de pareceres (JSON)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Importar
+    </button>
+    <button onclick="exportJSON()" style="background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:5px 12px;font-size:12px;color:#fff;cursor:pointer;font-family:var(--font);font-weight:600;display:flex;align-items:center;gap:5px" title="Salvar base de pareceres (JSON)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Salvar Base
+    </button>
+    <input type="file" id="import-json-inp" accept=".json" style="display:none" onchange="handleImportJSON(this)">
+    <div class="tb-badge"><span class="tb-dot"></span>Online</div>
+  </div>
+</header>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sm">
+    <div class="sl">Menu</div>
+    <button class="ni on" onclick="pg('dashboard',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </button>
+    <button class="ni" onclick="pg('consultar',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      Consultar Produto
+    </button>
+    <button class="ni" onclick="pg('bionexo',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="m9 12 2 2 4-4"/></svg>
+      Verificar Cotação
+      <span class="nc" id="nc-bio">Bionexo</span>
+    </button>
+    <button class="ni" onclick="pg('base',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Pareceres Técnicos
+      <span class="nc" id="nc-base">0</span>
+    </button>
+    <button class="ni" onclick="pg('cadastrar',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      Cadastrar Produto
+    </button>
+    <button class="ni" onclick="pg('historico',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+      Histórico
+      <span class="nc" id="nc-hist">0</span>
+    </button>
+    <button class="ni" onclick="pg('marcas',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+      Busca por Marca
+    </button>
+    <button class="ni" onclick="pg('comparar',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="8" height="18" rx="1"/><rect x="13" y="3" width="8" height="18" rx="1"/></svg>
+      Comparar Cotações
+    </button>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+
+<!-- DASHBOARD -->
+<div class="pg on" id="pg-dashboard">
+  <div class="ph"><div class="ph-t">Dashboard</div><div class="ph-s">Visão geral · HUV</div></div>
+  <div class="kpi-grid">
+    <div class="kpi b"><div class="kpi-l">Produtos SOULMV</div><div class="kpi-v" id="kv-total">—</div></div>
+    <div class="kpi g"><div class="kpi-l">Com Parecer</div><div class="kpi-v" id="kv-cp">0</div></div>
+    <div class="kpi o"><div class="kpi-l">Sem Parecer</div><div class="kpi-v" id="kv-sp">—</div></div>
+    <div class="kpi r"><div class="kpi-l">C/ Marca Proibida</div><div class="kpi-v" id="kv-pr">0</div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ct">Pareceres por Categoria</div><div id="ch-cats"><div style="padding:20px;color:var(--tx3);font-size:13px;text-align:center">Nenhum dado ainda.</div></div></div>
+    <div class="card"><div class="ct">Últimas Consultas</div><div id="ch-hist"><div style="padding:20px;color:var(--tx3);font-size:13px;text-align:center">Sem consultas nesta sessão.</div></div></div>
+  </div>
+</div>
+
+<!-- CONSULTAR -->
+<div class="pg" id="pg-consultar">
+  <div class="ph"><div class="ph-t">Consultar Produto</div><div class="ph-s">Busque pelo código SOULMV ou nome — marcas aparecem imediatamente</div></div>
+  <div class="card">
+    <div class="flex ic jb" style="margin-bottom:12px">
+      <div class="ct" style="margin-bottom:0">Buscar Produto</div>
+      <button class="btn btn-out btn-sm" onclick="openModal()">📖 Regras de Classificação</button>
+    </div>
+    <div class="srw" id="srw-cons">
+      <svg class="sr-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input class="sri" id="si-cons" placeholder="Código (ex: 124, 11124) ou nome do produto..." oninput="buscar(this.value,'cons')" onblur="setTimeout(()=>fechaSR('cons'),200)" autocomplete="off">
+      <div class="srd" id="sd-cons"></div>
+    </div>
+  </div>
+  <div class="pcard" id="pcard-cons">
+    <div class="pcard-hdr">
+      <span class="pcard-cod" id="pc-cod">—</span>
+      <div><div class="pcard-nome" id="pc-nome">—</div><div class="pcard-cat" id="pc-cat">—</div></div>
+      <div class="pcard-acts">
+        <button class="btn btn-out btn-sm" onclick="irCad()">✏️ Editar Parecer</button>
+        <span id="pc-pdf"></span>
+      </div>
+    </div>
+    <div id="pcard-body"></div>
+  </div>
+</div>
+
+<!-- BIONEXO -->
+<div class="pg" id="pg-bionexo">
+  <div class="ph"><div class="ph-t">Verificar Cotação Bionexo</div><div class="ph-s">Importe o relatório PDF do Bionexo para verificar todos os itens automaticamente</div></div>
+
+  <div class="card" id="bio-card-upload">
+    <div class="bio-drop" id="bio-drop" onclick="document.getElementById('bio-file-inp').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="event.preventDefault();this.classList.remove('drag');handleBioFile(event.dataTransfer.files[0])">
+      <input type="file" id="bio-file-inp" accept=".pdf,.txt,.csv" onchange="handleBioFile(this.files[0])">
+      <div class="bio-drop-icon">📋</div>
+      <div class="bio-drop-title">Importar Relatório do Bionexo</div>
+      <div class="bio-drop-sub">Arraste o PDF ou clique para selecionar</div>
+      <div class="bio-drop-hint">Formato: Relatório de itens não confirmados · PDF exportado do Bionexo</div>
+    </div>
+
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--bdr);display:flex;align-items:center;gap:12px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <div style="font-size:12px;color:var(--tx2);line-height:1.6">
+        <strong>Como exportar do Bionexo:</strong> Abra a cotação → Clique em <em>Relatório de itens não confirmados</em> → Salve o PDF → Arraste aqui.
+      </div>
+    </div>
+  </div>
+
+  <!-- Bio loaded info -->
+  <div class="bio-loaded flex ic gap12" id="bio-loaded-bar">
+    <span style="font-size:20px">📋</span>
+    <div><div class="bio-loaded-name" id="bio-loaded-name">—</div><div style="font-size:12px;color:var(--green)">Relatório carregado com sucesso</div></div>
+    <button class="btn btn-out btn-sm" style="margin-left:auto" onclick="limparBio()">Trocar arquivo</button>
+  </div>
+
+  <!-- Result -->
+  <div id="bio-result-wrap" style="display:none">
+    <div class="card">
+      <!-- Meta info from Bionexo header -->
+      <div id="bio-meta-wrap" style="margin-bottom:14px;display:none">
+        <div class="ct" style="margin-bottom:8px">Dados da Cotação</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px" id="bio-meta-items"></div>
+      </div>
+
+      <div class="ct" style="margin-bottom:10px">Resumo</div>
+      <div class="bio-sum" id="bio-sum"></div>
+
+      <div class="sep" style="margin:12px 0"></div>
+
+      <div class="flex ic jb" style="margin-bottom:10px">
+        <div class="ct" style="margin-bottom:0">Itens da Cotação</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-out btn-sm" onclick="filtBio('all')" id="fbtn-all">Todos</button>
+          <button class="btn btn-out btn-sm" onclick="filtBio('proibida')" id="fbtn-proibida">🔴 Bloqueados</button>
+          <button class="btn btn-out btn-sm" onclick="filtBio('atencao')" id="fbtn-atencao">⚠ Atenção</button>
+          <button class="btn btn-blue btn-sm" onclick="exportarRelatorio()">🖨 Exportar Relatório</button>
+        </div>
+      </div>
+
+      <div class="tw">
+        <table class="bio-tbl">
+          <thead><tr>
+            <th style="width:36px">#</th>
+            <th>Código</th>
+            <th>Descrição</th>
+            <th>Un.</th>
+            <th style="text-align:right">Qtd</th>
+            <th>Status Bionexo</th>
+            <th>Parecer Técnico</th>
+            <th>Marcas</th>
+            <th></th>
+          </tr></thead>
+          <tbody id="bio-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PARECERES TÉCNICOS -->
+<div class="pg" id="pg-base">
+  <div class="ph"><div class="ph-t">Pareceres Técnicos</div><div class="ph-s">Produtos com marcas cadastradas · Clique em ✏️ para editar</div></div>
+  <div class="card">
+    <div class="flex ic gap8" style="margin-bottom:14px">
+      <div class="srw" style="flex:1;max-width:380px">
+        <svg class="sr-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input class="sri" style="font-size:13px;padding:8px 12px 8px 36px" placeholder="Filtrar por código ou nome..." oninput="filtBase(this.value)">
+      </div>
+      <div id="base-info" style="font-size:12px;color:var(--tx3)"></div>
+      <button class="btn btn-blue btn-sm" onclick="gerarRelatorioPDF()" style="margin-left:auto;white-space:nowrap;display:flex;align-items:center;gap:5px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>
+        Gerar PDF
+      </button>
+    </div>
+    <div class="tw"><table>
+      <thead><tr><th>Código</th><th>Produto</th><th>Padrão</th><th>Permitidas</th><th>Restritas</th><th>Proibidas</th><th>Validade</th><th></th></tr></thead>
+      <tbody id="tb-base"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- CADASTRAR -->
+<div class="pg" id="pg-cadastrar">
+  <div class="ph"><div class="ph-t">Cadastrar / Editar Produto</div><div class="ph-s">Vincule marcas e faça upload do parecer em PDF</div></div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="ct" style="margin-bottom:10px">Carregar produto do SOULMV</div>
+    <div class="srw">
+      <svg class="sr-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input class="sri" id="si-cad" placeholder="Buscar código ou nome..." oninput="buscar(this.value,'cad')" onblur="setTimeout(()=>fechaSR('cad'),200)" autocomplete="off">
+      <div class="srd" id="sd-cad"></div>
+    </div>
+    <div style="margin-top:7px;font-size:12px;color:var(--tx3)">Ou preencha manualmente abaixo.</div>
+  </div>
+  <div class="card">
+    <div class="fgrid">
+      <div class="fg"><div class="fl">Código SOULMV</div><input class="fi" id="f-cod" placeholder="Ex: 2914"></div>
+      <div class="fg"><div class="fl">Categoria</div>
+        <select class="fs" id="f-cat">
+          <option value="">Selecione...</option>
+          <option>MEDICAMENTO</option><option>MATERIAL MEDICO</option><option>HEMODINÂMICA</option>
+          <option>AGULHAS</option><option>CATETERES</option><option>SONDAS</option><option>BOLSAS</option>
+          <option>ORTOPEDICA</option><option>OPME</option><option>EQUIPOS/INJETOR</option>
+          <option>DRENOS</option><option>FIOS</option><option>LUVA</option><option>SERINGAS</option>
+          <option>KIT</option><option>INSTRUMENTOS</option><option>OUTRO</option>
+        </select>
+      </div>
+      <div class="fg full"><div class="fl">Nome do Produto</div><input class="fi" id="f-nome" placeholder="Ex: COMPRESSA DE GAZE HIDROFILA 7.5X7.5CM"></div>
+      <div class="fg full"><div class="fl">Observações Técnicas</div><textarea class="fta" id="f-obs" placeholder="Restrições, validades, embalagem mínima..."></textarea></div>
+      <div class="fg"><div class="fl">Responsável Técnico</div><input class="fi" id="f-resp" placeholder="Ex: Farmacêutica Michele"></div>
+      <div class="fg"><div class="fl">Data do Parecer</div><input class="fi" type="date" id="f-data"></div>
+    </div>
+    <div class="sep"></div>
+    <div style="font-size:13px;font-weight:700;margin-bottom:14px">Marcas</div>
+    <div class="g2">
+      <div>
+        <div style="margin-bottom:16px">
+          <div class="mghd"><div class="mgdot" style="background:var(--blue)"></div><div class="mglbl" style="color:var(--blue)">Marca Padrão</div><div class="mgdsc">— comprar sempre</div></div>
+          <div class="tags" id="tg-padrao" style="margin-bottom:8px"></div>
+          <div class="min-row"><input class="mi" id="mi-padrao" placeholder="Nome da marca..." onkeydown="if(event.key==='Enter')aM('padrao')"><button class="btn btn-blue btn-sm" onclick="aM('padrao')">+ Adicionar</button></div>
+        </div>
+        <div>
+          <div class="mghd"><div class="mgdot" style="background:#DD6B20"></div><div class="mglbl" style="color:#7B341E">Restritas</div><div class="mgdsc">— uso condicionado</div></div>
+          <div class="tags" id="tg-restrita" style="margin-bottom:8px"></div>
+          <div class="min-row"><input class="mi" id="mi-restrita" placeholder="Nome da marca..." onkeydown="if(event.key==='Enter')aM('restrita')"><button class="btn btn-sm" style="background:var(--orange-l);color:var(--orange);border:1px solid var(--orange-m);font-weight:700" onclick="aM('restrita')">+ Adicionar</button></div>
+        </div>
+      </div>
+      <div>
+        <div style="margin-bottom:16px">
+          <div class="mghd"><div class="mgdot" style="background:#38A169"></div><div class="mglbl" style="color:#276749">Permitidas</div><div class="mgdsc">— se padrão indisponível</div></div>
+          <div class="tags" id="tg-permitida" style="margin-bottom:8px"></div>
+          <div class="min-row"><input class="mi" id="mi-permitida" placeholder="Nome da marca..." onkeydown="if(event.key==='Enter')aM('permitida')"><button class="btn btn-green btn-sm" onclick="aM('permitida')">+ Adicionar</button></div>
+        </div>
+        <div>
+          <div class="mghd"><div class="mgdot" style="background:#E53E3E"></div><div class="mglbl" style="color:#9B2C2C">Proibidas</div><div class="mgdsc">— não comprar</div></div>
+          <div class="tags" id="tg-proibida" style="margin-bottom:8px"></div>
+          <div class="min-row"><input class="mi" id="mi-proibida" placeholder="Nome da marca..." onkeydown="if(event.key==='Enter')aM('proibida')"><button class="btn btn-red btn-sm" onclick="aM('proibida')">+ Adicionar</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="sep"></div>
+    <div style="font-size:13px;font-weight:700;margin-bottom:10px">Parecer Técnico (PDF)</div>
+    <div class="upa" onclick="document.getElementById('pdf-inp').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="event.preventDefault();this.classList.remove('drag');doPdf(event.dataTransfer.files[0])">
+      <input type="file" id="pdf-inp" accept=".pdf" onchange="doPdf(this.files[0])">
+      <div style="font-size:24px;margin-bottom:5px">📄</div>
+      <div style="font-size:13px;color:var(--tx2)">Clique ou arraste o PDF</div>
+      <div style="font-size:11px;color:var(--tx3);margin-top:3px">Ficará vinculado ao produto cadastrado</div>
+      <div id="pdf-fn" style="display:none;font-size:12px;color:var(--blue);font-weight:600;margin-top:5px"></div>
+    </div>
+    <div id="pdf-view" style="display:none;margin-top:8px"><a id="pdf-a" href="#" target="_blank" style="font-size:13px;color:var(--blue);font-weight:600;text-decoration:none">📄 Visualizar parecer</a></div>
+    <div style="display:flex;gap:10px;margin-top:18px">
+      <button class="btn btn-blue" onclick="salvar()">💾 Salvar</button>
+      <button class="btn btn-out" onclick="limpar()">Limpar formulário</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- BUSCA POR MARCA -->
+<div class="pg" id="pg-marcas">
+  <div class="ph">
+    <div class="ph-t">Busca por Marca</div>
+    <div class="ph-s">Encontre todos os produtos onde uma marca aparece — independente da categoria</div>
+  </div>
+  <div class="card">
+    <div class="ct" style="margin-bottom:10px">Digite o nome da marca</div>
+    <div class="srw" style="max-width:480px">
+      <svg class="sr-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+      <input class="sri" id="si-marca" placeholder="Ex: CASEX, BD, CRISTALIA, BIOCOMPANY..."
+        oninput="buscarPorMarca(this.value)" autocomplete="off">
+    </div>
+  </div>
+  <div id="marca-result" style="margin-top:14px"></div>
+</div>
+
+<!-- COMPARAR COTAÇÕES -->
+<div class="pg" id="pg-comparar">
+  <div class="ph">
+    <div class="ph-t">Comparar Cotações</div>
+    <div class="ph-s">Compare duas cotações lado a lado — veja qual tem mais marcas aprovadas</div>
+  </div>
+  <div class="g2" style="margin-bottom:14px">
+    <div class="card">
+      <div class="ct" style="margin-bottom:8px">Cotação A</div>
+      <textarea id="cmp-a" style="width:100%;min-height:160px;padding:10px 12px;border:1.5px solid var(--bdr);border-radius:var(--r);font-family:var(--mono);font-size:12px;color:var(--tx);background:var(--surf2);outline:none;resize:vertical;line-height:1.7" placeholder="Cole os itens (CÓDIGO   DESCRIÇÃO   MARCA)&#10;Ex: 2914   GAZE   AMERICA"></textarea>
+    </div>
+    <div class="card">
+      <div class="ct" style="margin-bottom:8px">Cotação B</div>
+      <textarea id="cmp-b" style="width:100%;min-height:160px;padding:10px 12px;border:1.5px solid var(--bdr);border-radius:var(--r);font-family:var(--mono);font-size:12px;color:var(--tx);background:var(--surf2);outline:none;resize:vertical;line-height:1.7" placeholder="Cole os itens (CÓDIGO   DESCRIÇÃO   MARCA)&#10;Ex: 2914   GAZE   POLAR FIX"></textarea>
+    </div>
+  </div>
+  <div style="display:flex;gap:10px;margin-bottom:16px">
+    <button class="btn btn-blue" onclick="compararCotacoes()">⚖️ Comparar</button>
+    <button class="btn btn-out" onclick="document.getElementById('cmp-a').value='';document.getElementById('cmp-b').value='';document.getElementById('cmp-result').style.display='none'">Limpar</button>
+  </div>
+  <div id="cmp-result" style="display:none"></div>
+</div>
+
+<!-- HISTÓRICO -->
+<div class="pg" id="pg-historico">
+  <div class="ph"><div class="ph-t">Histórico</div><div class="ph-s">Consultas e verificações desta sessão</div></div>
+  <div class="card" id="hist-card"><div style="padding:32px;text-align:center;color:var(--tx3);font-size:13px">Nenhuma atividade nesta sessão.</div></div>
+</div>
+</main>
+</div>
+
+<!-- MODAL -->
+<div class="ov" id="modal-rules" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <button class="mc" onclick="closeModal()">✕</button>
+    <div class="mt">Regras de Classificação</div>
+    <div class="ms">Como interpretar o parecer de cada marca</div>
+    <div class="mr"><div class="mr-ico">🔵</div><div><div class="mr-t" style="color:var(--blue)">PADRÃO — Comprar esta marca</div><div class="mr-d">Marca de referência. Prioridade máxima. Substitua somente se indisponível.</div></div></div>
+    <div class="mr"><div class="mr-ico">🟢</div><div><div class="mr-t" style="color:#276749">PERMITIDA — Pode comprar</div><div class="mr-d">Alternativa aprovada. Use quando a padrão não estiver disponível.</div></div></div>
+    <div class="mr"><div class="mr-ico">🟡</div><div><div class="mr-t" style="color:#7B341E">RESTRITA — Consultar antes</div><div class="mr-d">Uso condicionado. Não compre sem autorização do responsável técnico.</div></div></div>
+    <div class="mr"><div class="mr-ico">🔴</div><div><div class="mr-t" style="color:#9B2C2C">PROIBIDA — Não comprar</div><div class="mr-d">Marca vetada. Compras serão reprovadas na auditoria.</div></div></div>
+    <div class="mr"><div class="mr-ico">🟣</div><div><div class="mr-t" style="color:#553C9A">SUGESTÃO — Sem parecer cadastrado</div><div class="mr-d">Marca reconhecida no mercado para esta categoria. Não substitui avaliação técnica formal.</div></div></div>
+    <div class="mr"><div class="mr-ico">⚪</div><div><div class="mr-t" style="color:var(--tx3)">SEM PARECER</div><div class="mr-d">Produto sem marcas cadastradas. Consulte a comissão técnica.</div></div></div>
+  </div>
+</div>
+
+
+<!-- SAVE BAR -->
+<div class="save-bar" id="save-bar">
+  <span class="unsaved-dot"></span>
+  <span class="save-bar-msg" id="save-bar-msg">Você tem alterações não salvas.</span>
+  <button class="btn btn-blue btn-sm" onclick="exportJSON()">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Baixar JSON
+  </button>
+  <button class="btn btn-out btn-sm" onclick="hideSaveBar()">Ignorar</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Scripts (ordem de dependência) -->
+<script src="js/data.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/pdf-report.js"></script>
+<script src="js/ui.js"></script>
+
+</body>
+</html>
