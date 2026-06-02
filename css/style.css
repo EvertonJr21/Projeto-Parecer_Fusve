@@ -1,4 +1,4 @@
-/* Parecer Técnico HUV — Estilos principais */
+/* Parecer Técnico HUV — Estilos */
 
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -228,64 +228,6 @@ tr:hover td{background:var(--surf2)}
 /* TOAST */
 .toast{position:fixed;bottom:20px;right:20px;z-index:300;padding:11px 18px;border-radius:var(--r);font-size:13px;font-weight:600;box-shadow:var(--sh-lg);transform:translateY(50px);opacity:0;transition:all .22s;pointer-events:none;max-width:340px;color:#fff}
 .toast.on{transform:translateY(0);opacity:1}
-
-
-/* ── SAVE BAR ── */
-.save-bar{
-  position:fixed;bottom:0;left:230px;right:0;
-  background:var(--surf);border-top:2px solid var(--blue-m);
-  padding:10px 20px;display:flex;align-items:center;gap:12px;
-  z-index:150;box-shadow:0 -2px 8px rgba(0,0,0,.08);
-  transform:translateY(100%);transition:transform .25s ease
-}
-.save-bar.visible{transform:translateY(0)}
-.save-bar-msg{font-size:12px;color:var(--tx2);flex:1}
-.save-bar-msg strong{color:var(--red);font-size:13px}
-.unsaved-dot{width:8px;height:8px;border-radius:50%;background:var(--red);
-  display:inline-block;margin-right:6px;animation:blink 1.2s infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-/* ── IMPORT JSON ── */
-.import-zone{border:2px dashed var(--bdr2);border-radius:var(--r);padding:12px 16px;
-  display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .15s;
-  background:var(--surf2);font-size:13px;color:var(--tx2)}
-.import-zone:hover{border-color:var(--blue);background:var(--blue-l);color:var(--blue)}
-.import-zone input{display:none}
-/* ── STATUS PILLS ── */
-.stat-ok{background:var(--green-l);color:var(--green);border:1px solid var(--green-m)}
-.stat-warn{background:var(--amber-l);color:var(--amber);border:1px solid var(--amber-m)}
-
-
-/* ── VALIDADE ── */
-.val-ok{font-size:11px;color:var(--green);font-weight:600}
-.val-warn{font-size:11px;color:var(--amber);font-weight:700;display:flex;align-items:center;gap:3px}
-.val-exp{font-size:11px;color:var(--red);font-weight:700;display:flex;align-items:center;gap:3px}
-.val-none{font-size:11px;color:var(--tx3)}
-/* ── MARCA SEARCH RESULT ── */
-.marca-card{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r-lg);overflow:hidden;margin-bottom:10px;box-shadow:var(--sh)}
-.marca-card-hdr{padding:11px 16px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:10px;background:var(--surf2)}
-.marca-cat-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--blue-l);color:var(--blue)}
-.marca-role{font-size:12px;font-weight:700;padding:3px 10px;border-radius:12px;white-space:nowrap}
-.role-padrao{background:var(--blue-l);color:var(--blue)}
-.role-permitida{background:var(--green-l);color:var(--green)}
-.role-restrita{background:var(--orange-l);color:var(--orange)}
-.role-proibida{background:var(--red-l);color:var(--red)}
-/* ── COMPARE ── */
-.cmp-row{display:grid;grid-template-columns:60px 1fr 1fr;gap:0;border-bottom:1px solid var(--bdr)}
-.cmp-row:last-child{border-bottom:none}
-.cmp-row.danger{background:var(--red-l)}
-.cmp-row.warn{background:var(--amber-l)}
-.cmp-row.ok{background:var(--green-l)}
-.cmp-cell{padding:9px 12px;font-size:13px}
-.cmp-num{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--tx3);padding:9px 12px;display:flex;align-items:center}
-/* ── PRINT ── */
-@media print{
-  .sidebar,.topbar,.save-bar,.btn,.pcard-acts,#bio-card-upload,.bio-loaded,.flex.ic.jb button{display:none!important}
-  .app{display:block}.main{padding:0}.pg.on{padding:16px}
-  .card{box-shadow:none;border:1px solid #ccc}
-  .bio-tbl tr.r-proibida{background:#ffe0e0!important}
-  .bio-tbl tr.r-padrao{background:#e0ffe0!important}
-  body{font-size:12px}
-}
 
 /* UTILS */
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
