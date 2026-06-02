@@ -1,4 +1,4 @@
-// Interface: navegação, busca, cadastro, tabelas, dashboard
+// Interface: navegação, busca, cadastro, tabelas, dashboard, toast
 
 // ══════ NAV ══════
 function pg(id,btn){
@@ -10,7 +10,6 @@ function pg(id,btn){
   if(id==='dashboard')renderDash();
   if(id==='historico')renderHist();
 }
-
 
 // ══════ SEARCH ══════
 function buscar(q,ctx){
@@ -87,6 +86,8 @@ function selP(p,ctx){
 
 function mTags(arr,tipo){return arr.length?arr.map(m=>`<span class="tag ${tipo}">${m}</span>`).join(''):`<span class="no-marca">Nenhuma</span>`;}
 
+// ══════ BIONEXO ══════
+
 
 // ══════ CADASTRO ══════
 function aM(tipo){
@@ -114,7 +115,6 @@ function salvar(){
   const idx=DB.findIndex(p=>p.cod===cod);
   const novo={cod,nome,cat:document.getElementById('f-cat').value,padrao:[...mc.padrao],permitidas:[...mc.permitida],restritas:[...mc.restrita],proibidas:[...mc.proibida],observacao:document.getElementById('f-obs').value.trim(),responsavel:document.getElementById('f-resp').value.trim(),data:document.getElementById('f-data').value,parecer:pdfObj?pdfObj.name:(idx>=0?DB[idx].parecer:''),pdfDataUrl:pdfObj?pdfObj.dataUrl:(idx>=0?DB[idx].pdfDataUrl:null)};
   if(idx>=0)DB[idx]=novo;else DB.push(novo);
-  autoSave();
   updNC();toast(idx>=0?'Parecer atualizado!':'Produto cadastrado!');limpar();
 }
 function limpar(){
@@ -135,86 +135,169 @@ function irCad(){
 }
 
 
-// ══════ BASE ══════
-function renderBase(q=''){
-  const fq=q.toUpperCase();
-  const lst=fq?DB.filter(p=>p.cod.includes(fq)||p.nome.toUpperCase().includes(fq)):DB;
-  document.getElementById('base-info').textContent=lst.length+' registros';
-  const tb=document.getElementById('tb-base');
-  if(!lst.length){tb.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--tx3)">Nenhum resultado.</td></tr>`;return;}
-  tb.innerHTML=lst.map(p=>`<tr>
-    <td class="tc">${p.cod}</td>
-    <td class="tn">${p.nome}<small>${p.cat||''}</small></td>
-    <td>${p.padrao.map(m=>`<span class="bd bd-b">${m}</span>`).join(' ')||'<span style="color:var(--tx3)">—</span>'}</td>
-    <td>${p.permitidas.map(m=>`<span class="bd bd-g">${m}</span>`).join(' ')||'<span style="color:var(--tx3)">—</span>'}</td>
-    <td>${p.restritas.map(m=>`<span class="bd bd-o">${m}</span>`).join(' ')||'<span style="color:var(--tx3)">—</span>'}</td>
-    <td>${p.proibidas.map(m=>`<span class="bd bd-r">${m}</span>`).join(' ')||'<span style="color:var(--tx3)">—</span>'}</td>
-    <td>${validadeHTML(p.data)}</td>
-    <td style="white-space:nowrap">
-      <button class="btn btn-out btn-sm" onclick="editP('${p.cod}')">✏️</button>
-      ${p.pdfDataUrl?`<a href="${p.pdfDataUrl}" target="_blank" class="btn btn-out btn-sm" style="margin-left:4px;text-decoration:none">📄</a>`:''}
-    </td>
-  </tr>`).join('');
+
+// ══════ APAGAR PARECER ══════
+function confirmarApagar(cod) {
+  var par = DB.find(function(p){ return p.cod===cod; });
+  if(!par) return;
+  document.getElementById('apagar-nome').textContent = par.cod + ' — ' + par.nome;
+  document.getElementById('apagar-cod-hidden').value = cod;
+  document.getElementById('modal-apagar').classList.add('on');
 }
-function filtBase(q){renderBase(q);}
-function editP(cod){
-  const p=DB.find(x=>x.cod===cod);
-  const pr=PRODS.find(x=>x.cod===cod)||{cod,nome:p.nome,cat:p.cat};
-  document.querySelectorAll('.pg').forEach(x=>x.classList.remove('on'));
-  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('on'));
-  document.getElementById('pg-cadastrar').classList.add('on');
-  document.querySelectorAll('.ni')[4].classList.add('on');
-  selP(pr,'cad');document.getElementById('si-cad').value=pr.cod+' · '+pr.nome;
+function cancelarApagar() {
+  document.getElementById('modal-apagar').classList.remove('on');
+}
+async function executarApagar() {
+  var cod = document.getElementById('apagar-cod-hidden').value;
+  await fbDelete(cod);
+  cancelarApagar();
+  updNC();
+  renderBase();
+  toast('Parecer removido.');
 }
 
+// ══════ BASE ══════
+var _filtCat='', _filtTexto='';
+
+function renderBase() {
+  var fq  = _filtTexto.toUpperCase();
+  var cat = _filtCat;
+  var lst = DB.filter(function(p){
+    if(cat && (p.cat||'')!==cat) return false;
+    if(fq && !p.cod.includes(fq) && !p.nome.toUpperCase().includes(fq)) return false;
+    return true;
+  });
+
+  // Rebuild category dropdown
+  var cats = [...new Set(DB.map(function(p){return p.cat||'';}).filter(Boolean))].sort();
+  var sel  = document.getElementById('fil-cat');
+  if(sel) {
+    var cur = sel.value;
+    sel.innerHTML = '<option value="">Todas as categorias</option>';
+    cats.forEach(function(c){ sel.innerHTML+='<option value="'+c+'"'+(c===cur?' selected':'')+'>'+c+'</option>'; });
+  }
+
+  document.getElementById('base-info').textContent = lst.length+' registro(s)';
+  var tb = document.getElementById('tb-base');
+  if(!lst.length){
+    tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--tx3)">Nenhum resultado.</td></tr>';
+    return;
+  }
+
+  function bds(arr,cls){ return arr&&arr.length ? arr.map(function(m){return '<span class="bd '+cls+'">'+m+'</span>';}).join(' ') : '<span style="color:var(--tx3)">—</span>'; }
+  function valHTML(d){
+    if(!d) return '<span style="color:var(--tx3);font-size:11px">—</span>';
+    try{
+      var dt=new Date(d),now=new Date();
+      var m=(now.getFullYear()-dt.getFullYear())*12+(now.getMonth()-dt.getMonth());
+      if(m<12)  return '<span style="font-size:11px;font-weight:600;color:#276749">✓ '+m+'m</span>';
+      if(m<18)  return '<span style="font-size:11px;font-weight:700;color:#92400E">⚠ '+m+'m</span>';
+      return '<span style="font-size:11px;font-weight:700;color:#9B2C2C">⚠ '+m+'m — Rever</span>';
+    }catch(e){return '<span style="color:var(--tx3);font-size:11px">—</span>';}
+  }
+
+  tb.innerHTML = lst.map(function(p){
+    var pdfBtn = p.pdfDataUrl ? '<a href="'+p.pdfDataUrl+'" target="_blank" class="btn btn-out btn-sm" style="text-decoration:none" title="Ver PDF">📄</a>' : '';
+    return '<tr>'
+      +'<td class="tc">'+p.cod+'</td>'
+      +'<td class="tn">'+p.nome+'<small>'+(p.cat||'')+'</small></td>'
+      +'<td>'+bds(p.padrao,'bd-b')+'</td>'
+      +'<td>'+bds(p.permitidas,'bd-g')+'</td>'
+      +'<td>'+bds(p.restritas,'bd-o')+'</td>'
+      +'<td>'+bds(p.proibidas,'bd-r')+'</td>'
+      +'<td>'+valHTML(p.data)+'</td>'
+      +'<td style="white-space:nowrap;display:flex;gap:4px">'
+      +'<button class="btn btn-out btn-sm" onclick="editP(\''+p.cod+'\')" title="Editar">✏️</button>'
+      +pdfBtn
+      +'<button class="btn btn-sm" onclick="confirmarApagar(\''+p.cod+'\')" style="background:var(--red-l);color:var(--red);border:1px solid var(--red-m)" title="Apagar">🗑</button>'
+      +'</td></tr>';
+  }).join('');
+}
+
+function filtBase(q){ _filtTexto=q||''; renderBase(); }
+function filtCat(c) { _filtCat=c||'';   renderBase(); }
+
+function editP(cod){
+  var p  = DB.find(function(x){return x.cod===cod;});
+  var pr = PRODS.find(function(x){return x.cod===cod;})||{cod:p.cod,nome:p.nome,cat:p.cat};
+  document.querySelectorAll('.pg').forEach(function(x){x.classList.remove('on');});
+  document.querySelectorAll('.ni').forEach(function(n){n.classList.remove('on');});
+  document.getElementById('pg-cadastrar').classList.add('on');
+  document.querySelectorAll('.ni')[4].classList.add('on');
+  selP(pr,'cad');
+  document.getElementById('si-cad').value=pr.cod+' · '+pr.nome;
+}
+
+// ══════ SALVAR (Firebase) ══════
+async function salvar(){
+  var cod  = document.getElementById('f-cod').value.trim();
+  var nome = document.getElementById('f-nome').value.trim();
+  if(!cod||!nome){toast('Código e nome obrigatórios.','w');return;}
+  if(!Object.values(mc).some(function(a){return a.length;})){toast('Adicione ao menos uma marca.','w');return;}
+  var idx  = DB.findIndex(function(p){return p.cod===cod;});
+  var novo = {
+    cod:        cod, nome:nome,
+    cat:        document.getElementById('f-cat').value,
+    padrao:     [...mc.padrao],    permitidas: [...mc.permitida],
+    restritas:  [...mc.restrita],  proibidas:  [...mc.proibida],
+    observacao: document.getElementById('f-obs').value.trim(),
+    responsavel:document.getElementById('f-resp').value.trim(),
+    data:       document.getElementById('f-data').value,
+    parecer:    pdfObj ? pdfObj.name    : (idx>=0 ? DB[idx].parecer    : ''),
+    pdfDataUrl: pdfObj ? pdfObj.dataUrl : (idx>=0 ? DB[idx].pdfDataUrl : null),
+  };
+  if(idx>=0) DB[idx]=novo; else DB.push(novo);
+  await fbSave(novo);
+  updNC();
+  toast(idx>=0 ? 'Parecer atualizado!' : 'Produto cadastrado!');
+  limpar();
+}
 
 // ══════ DASHBOARD ══════
 function renderDash(){
   updNC();
-  const cats={};DB.forEach(p=>{cats[p.cat||'OUTRO']=(cats[p.cat||'OUTRO']||0)+1;});
-  const s=Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,7);
-  const mx=s[0]?.[1]||1;
-  const cs=['#3182CE','#38A169','#DD6B20','#E53E3E','#805AD5','#00B5D8','#D69E2E'];
-  document.getElementById('ch-cats').innerHTML=s.length?s.map(([k,v],i)=>`<div class="bar-row"><div class="bar-lbl">${k}</div><div class="bar-trk"><div class="bar-f" style="width:${(v/mx*100).toFixed(0)}%;background:${cs[i%cs.length]}"></div></div><div class="bar-n">${v}</div></div>`).join(''):'<div style="padding:20px;color:var(--tx3);font-size:13px;text-align:center">Nenhum parecer cadastrado ainda.</div>';
-  const hEl=document.getElementById('ch-hist');
-  if(!hist.length){hEl.innerHTML='<div style="padding:20px;color:var(--tx3);font-size:13px;text-align:center">Sem atividade nesta sessão.</div>';return;}
-  hEl.innerHTML=hist.slice(0,6).map(h=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--bdr)"><span style="font-family:var(--mono);font-size:10px;color:var(--tx3);flex-shrink:0">${h.ts}</span><span style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h.nome}</span>${h.alert?'<span class="bd bd-r">⚠</span>':h.tipo==='cotacao'?'<span class="bd bd-gr">Lote</span>':'<span class="bd bd-b">Consulta</span>'}</div>`).join('');
+  var cats={};
+  DB.forEach(function(p){cats[p.cat||'OUTRO']=(cats[p.cat||'OUTRO']||0)+1;});
+  var s=Object.entries(cats).sort(function(a,b){return b[1]-a[1];}).slice(0,7);
+  var mx=s[0]?s[0][1]:1;
+  var cs=['#3182CE','#38A169','#DD6B20','#E53E3E','#805AD5','#00B5D8','#D69E2E'];
+  var ce=document.getElementById('ch-cats');
+  if(ce) ce.innerHTML=s.length?s.map(function(e,i){return '<div class="bar-row"><div class="bar-lbl">'+e[0]+'</div><div class="bar-trk"><div class="bar-f" style="width:'+(e[1]/mx*100).toFixed(0)+'%;background:'+cs[i%cs.length]+'"></div></div><div class="bar-n">'+e[1]+'</div></div>';}).join(''):'<div style="padding:20px;color:var(--tx3);font-size:13px;text-align:center">Nenhum dado.</div>';
+  var he=document.getElementById('ch-hist');
+  if(!he) return;
+  if(!hist.length){he.innerHTML='<div style="padding:20px;color:var(--tx3);font-size:13px;text-align:center">Sem consultas.</div>';return;}
+  he.innerHTML=hist.slice(0,6).map(function(h){return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--bdr)"><span style="font-family:var(--mono);font-size:10px;color:var(--tx3);flex-shrink:0">'+h.ts+'</span><span style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+h.nome+'</span><span class="bd bd-b">Consulta</span></div>';}).join('');
 }
-function updNC(){
-  const cp=DB.length,sp=PRODS.length-cp,pr=DB.filter(p=>p.proibidas&&p.proibidas.length).length;
-  document.getElementById('kv-total').textContent=PRODS.length.toLocaleString('pt-BR');
-  document.getElementById('kv-cp').textContent=cp;
-  document.getElementById('kv-sp').textContent=sp.toLocaleString('pt-BR');
-  document.getElementById('kv-pr').textContent=pr;
-  document.getElementById('nc-base').textContent=cp;
-  document.getElementById('nc-hist').textContent=hist.length;
-}
-
 
 // ══════ HISTÓRICO ══════
 function renderHist(){
-  const el=document.getElementById('hist-card');
-  if(!hist.length){el.innerHTML='<div style="padding:32px;text-align:center;color:var(--tx3);font-size:13px">Nenhuma atividade nesta sessão.</div>';return;}
-  el.innerHTML=`<div class="tw"><table><thead><tr><th>Hora</th><th>Código</th><th>Produto / Ação</th><th>Tipo</th></tr></thead><tbody>${hist.map(h=>`<tr><td style="font-family:var(--mono);font-size:11px;color:var(--tx3)">${h.ts}</td><td class="tc">${h.cod}</td><td class="tn">${h.nome}</td><td>${h.tipo==='cotacao'?`<span class="bd ${h.alert?'bd-r':'bd-gr'}">${h.alert?'⚠ ':''} Cotação</span>`:'<span class="bd bd-b">Consulta</span>'}</td></tr>`).join('')}</tbody></table></div>`;
+  var el=document.getElementById('hist-card');
+  if(!hist.length){el.innerHTML='<div style="padding:32px;text-align:center;color:var(--tx3);font-size:13px">Nenhuma atividade.</div>';return;}
+  el.innerHTML='<div class="tw"><table><thead><tr><th>Hora</th><th>Código</th><th>Produto</th><th>Tipo</th></tr></thead><tbody>'+hist.map(function(h){return '<tr><td style="font-family:var(--mono);font-size:11px;color:var(--tx3)">'+h.ts+'</td><td class="tc">'+h.cod+'</td><td class="tn">'+h.nome+'</td><td><span class="bd bd-b">Consulta</span></td></tr>';}).join('')+'</tbody></table></div>';
 }
-
 
 // ══════ MODAL ══════
 function openModal(){document.getElementById('modal-rules').classList.add('on');}
 function closeModal(){document.getElementById('modal-rules').classList.remove('on');}
 
-
 // ══════ TOAST ══════
-function toast(m,t='ok'){const el=document.getElementById('toast');el.textContent=(t==='w'?'⚠ ':'✓ ')+m;el.style.background=t==='w'?'#92400E':'#276749';el.classList.add('on');setTimeout(()=>el.classList.remove('on'),2800);}
+function toast(m,t){
+  var el=document.getElementById('toast');
+  el.textContent=(t==='w'?'⚠ ':'✓ ')+m;
+  el.style.background=t==='w'?'#92400E':'#276749';
+  el.classList.add('on');
+  setTimeout(function(){el.classList.remove('on');},2800);
+}
 
+// ══════ UPDNC ══════
+function updNC(){
+  var cp=DB.length,pr=DB.filter(function(p){return p.proibidas&&p.proibidas.length;}).length;
+  var sp=4579-cp;
+  var kv=document.getElementById('kv-total'); if(kv) kv.textContent=(4579).toLocaleString('pt-BR');
+  var kc=document.getElementById('kv-cp');    if(kc) kc.textContent=cp;
+  var ks=document.getElementById('kv-sp');    if(ks) ks.textContent=sp.toLocaleString('pt-BR');
+  var kr=document.getElementById('kv-pr');    if(kr) kr.textContent=pr;
+  var nb=document.getElementById('nc-base');  if(nb) nb.textContent=cp;
+  var nh=document.getElementById('nc-hist');  if(nh) nh.textContent=hist.length;
+}
 
-
-// ══════ INIT ══════
-(function(){
-  var loaded = loadFromStorage();
-  if(loaded){
-    console.log('Loaded ' + loaded + ' pareceres from localStorage');
-  }
-  updNC();
-  renderDash();
-})();
